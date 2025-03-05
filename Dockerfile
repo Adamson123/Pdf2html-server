@@ -9,14 +9,19 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package.json package-lock.json ./
-RUN npm install
+# Copy package.json (Skip package-lock.json if missing)
+COPY package.json ./
+
+# Install dependencies (Ignore package-lock.json if not present)
+RUN npm install --no-package-lock
 
 # Copy the entire project
 COPY . .
 
-# Expose port for Railway
+# Ensure /tmp directory is writable (important for in-memory PDF processing)
+RUN mkdir -p /tmp && chmod -R 777 /tmp
+
+# Expose port for Koyeb
 EXPOSE 3000
 
 # Start the server
