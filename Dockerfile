@@ -1,24 +1,17 @@
 # Use Node.js base image
 FROM node:18-bullseye
 
-# Install dependencies for pdf2htmlEX
+# Install dependencies required for pdf2htmlEX
 RUN apt-get update && apt-get install -y \
     build-essential \
-    cmake \
-    pkg-config \
     poppler-utils \
-    poppler-data \
-    libpoppler-cpp-dev \
     fontforge \
-    git \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone and build pdf2htmlEX from source
-RUN git clone --depth=1 https://github.com/pdf2htmlEX/pdf2htmlEX.git /opt/pdf2htmlEX \
-    && cd /opt/pdf2htmlEX \
-    && cmake . \
-    && make \
-    && make install
+# Download and install prebuilt pdf2htmlEX binary
+RUN wget -qO /usr/local/bin/pdf2htmlEX https://github.com/pdf2htmlEX/pdf2htmlEX/releases/download/v0.18.8.rc2/pdf2htmlEX-linux-64bit \
+    && chmod +x /usr/local/bin/pdf2htmlEX
 
 # Set working directory
 WORKDIR /app
