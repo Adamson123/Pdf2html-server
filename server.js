@@ -28,4 +28,16 @@ app.post("/convert", upload.single("pdf"), (req, res) => {
       if (err) return res.status(500).json({ error: "Error reading HTML file" });
 
       // Cleanup temp files
-      fs.unlink(pdfPath,
+      fs.unlink(pdfPath, () => {});
+      fs.unlink(outputPath, () => {});
+
+      res.send(htmlData);
+    });
+  });
+});
+
+// Health check
+app.get("/", (req, res) => res.send("pdf2htmlEX Server is running!"));
+
+// Start the server
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
