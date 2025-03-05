@@ -1,35 +1,35 @@
-# Use Node.js base image
-FROM node:18-bullseye
+# Use a lightweight base image
+FROM debian:latest
 
-# Install dependencies required for pdf2htmlEX
+# Install dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    poppler-utils \
-    fontforge \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
+    build-essential cmake g++ pkg-config \
+    libpoppler-glib-dev poppler-utils \
+    libfontforge-dev libglib2.0-dev \
+    libcairo2-dev libjpeg-dev libpng-dev \
+    git wget curl
 
-# Download and install prebuilt pdf2htmlEX binary
-RUN wget -qO /usr/local/bin/pdf2htmlEX https://github.com/pdf2htmlEX/pdf2htmlEX/releases/download/v0.18.8.rc2/pdf2htmlEX-linux-64bit \
-    && chmod +x /usr/local/bin/pdf2htmlEX
+# Install Node.js and npm (using NodeSource)
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs
 
-# Set working directory
+# Verify installations
+RUN node -v && npm -v
+
+# Clone and build pdf2htmlEX from source
+RUN git clone --depth=1 https://github.com/pdf2htmlEX/pdf2htmlEX.git /opt/pdf2htmlEX && \
+    cd /opt/pdf2htmlEX && \
+    cmake . && make && make install
+
+# Set the working directory
 WORKDIR /app
 
-# Copy package.json (Skip package-lock.json if missing)
-COPY package.json ./
+# Copy package.json and install dependencies if needed
+COPY package*.json ./
+RUN npm install
 
-# Install dependencies (Ignore package-lock.json if not present)
-RUN npm install --no-package-lock
-
-# Copy the entire project
+# Copy project files
 COPY . .
 
-# Ensure /tmp directory is writable
-RUN mkdir -p /tmp && chmod -R 777 /tmp
-
-# Expose port for Koyeb
-EXPOSE 3000
-
-# Start the server
-CMD ["node", "server.js"]
+# Set default command (adjust based on your Node.js app)
+CMD ["npm", "start"]
