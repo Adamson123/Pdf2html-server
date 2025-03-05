@@ -1,7 +1,7 @@
 # Use Debian as the base image
 FROM debian:latest
 
-# Install dependencies
+# Install dependencies (sudo removed, using root)
 RUN apt-get update && apt-get install -y \
     build-essential cmake g++ pkg-config \
     libpoppler-glib-dev poppler-utils \
@@ -17,13 +17,16 @@ RUN git clone --recursive https://github.com/pdf2htmlEX/pdf2htmlEX.git /pdf2html
 # Navigate to the pdf2htmlEX directory
 WORKDIR /pdf2htmlEX
 
-# Install additional dependencies required for pdf2htmlEX
+# Install additional dependencies required for pdf2htmlEX (Without sudo)
 RUN apt-get update && apt-get install -y \
     libfreetype6-dev libfontconfig1-dev \
     libicu-dev libpng-dev libjpeg-dev \
     && rm -rf /var/lib/apt/lists/*  # Clean up APT cache
 
-# Build pdf2htmlEX
+# Modify build scripts to remove sudo references (fix the error)
+RUN sed -i 's/sudo //g' ./buildScripts/getBuildToolsApt
+
+# Build pdf2htmlEX without sudo
 RUN ./buildScripts/getBuildToolsApt \
     && ./buildScripts/buildInstallLocallyApt
 
