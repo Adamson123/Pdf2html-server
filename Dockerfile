@@ -1,47 +1,39 @@
-# Use Ubuntu as the base image
-FROM ubuntu:22.04
+# Use Debian as the base image
+FROM debian:latest
 
-# Update package manager and install dependencies
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-    sudo \
-    gzip \
-    zip \
-    git \
-    m4 \
-    poppler-utils \
-    fontforge \
-    build-essential \
-    cmake \
-    g++ \
-    pkg-config \
-    libpoppler-glib-dev \
-    curl
-
-# Install Node.js and npm (using NodeSource)
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs
-
-# Verify installations
-RUN node -v && npm -v
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential cmake g++ pkg-config \
+    libpoppler-glib-dev poppler-utils \
+    fontforge libglib2.0-dev \
+    libcairo2-dev libjpeg-dev libpng-dev \
+    git wget curl software-properties-common \
+    nodejs npm \
+    && rm -rf /var/lib/apt/lists/*  # Clean up APT cache
 
 # Clone the pdf2htmlEX repository
-RUN git clone https://github.com/pdf2htmlEX/pdf2htmlEX.git /pdf2htmlEX
+RUN git clone --recursive https://github.com/pdf2htmlEX/pdf2htmlEX.git /pdf2htmlEX
 
 # Navigate to the pdf2htmlEX directory
 WORKDIR /pdf2htmlEX
 
-# Build pdf2htmlEX locally
-RUN ./buildScripts/getBuildToolsApt && ./buildScripts/buildInstallLocallyApt
+# Install additional dependencies required for pdf2htmlEX
+RUN apt-get update && apt-get install -y \
+    libfreetype6-dev libfontconfig1-dev \
+    libicu-dev libpng-dev libjpeg-dev \
+    && rm -rf /var/lib/apt/lists/*  # Clean up APT cache
 
-# Set working directory for the app
+# Build pdf2htmlEX
+RUN ./buildScripts/getBuildToolsApt \
+    && ./buildScripts/buildInstallLocallyApt
+
+# Install npm dependencies (if needed)
 WORKDIR /app
-
-# Copy package.json and install npm dependencies
-COPY package*.json ./
+COPY package.json package-lock.json* ./
 RUN npm install
 
-# Copy project files
+# Copy the rest of the application
 COPY . .
 
-# Set the default command to npm start
-CMD ["npm", "start"]
+# Set pdf2htmlEX as the default command
+ENTRYPOINT ["pdf2htmlEX"]
