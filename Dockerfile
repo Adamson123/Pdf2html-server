@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     poppler-data \
     libpoppler-cpp-dev \
-    libfontforge-dev \
     fontforge \
     git \
     && rm -rf /var/lib/apt/lists/*
