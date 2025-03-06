@@ -18,12 +18,16 @@ RUN wget https://github.com/pdf2htmlEX/pdf2htmlEX/releases/download/v0.18.8.rc1/
 
 WORKDIR /app
 
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
+# Install dependencies using package-lock.json
 RUN npm install
 
+# Copy the rest of the application code
 COPY . .
 
+# Check if node_modules exists
 RUN ls -la node_modules || echo "node_modules is missing!"
 
 EXPOSE 3000
