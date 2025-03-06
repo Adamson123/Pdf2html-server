@@ -26,7 +26,7 @@ app.post("/convert", upload.single("pdf"), async (req, res) => {
   const outputHtmlPath = `${pdfPath}.html`;
 
   try {
-    const pdf2htmlEXCommand = `pdf2htmlEX --zoom 1 --embed-css 1 --embed-font 1 --embed-image 1 --bg-format none --split-pages 1 --process-outline 0 --optimize-text 1 "${pdfPath}" "${outputHtmlPath}"`;
+    const pdf2htmlEXCommand = `pdf2htmlEX --zoom 1 --embed-css 1 --embed-font 1 --embed-image 1 --bg-format svg --split-pages 1 --process-outline 0 --optimize-text 1 "${pdfPath}" "${outputHtmlPath}"`;
 
     exec(pdf2htmlEXCommand, async (error, stdout, stderr) => {
       if (error) {
