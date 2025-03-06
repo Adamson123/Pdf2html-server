@@ -23,8 +23,8 @@ app.post("/convert", upload.single("pdf"), async (req, res) => {
   const pdfPath = req.file.path;
   const outputPath = `${pdfPath}.html`;
 
-  // ✅ Updated pdf2htmlEX command (based on official documentation)
-  const pdf2htmlEXCommand = `pdf2htmlEX --zoom 1 --embed-css 1 --embed-font 1 --embed-image 0 --bg-format png --process-outline 0 "${pdfPath}" "${outputPath}"`;
+  // ✅ Keep images but turn background images into divs
+  const pdf2htmlEXCommand = `pdf2htmlEX --zoom 1 --embed-css 1 --embed-font 1 --embed-image 1 --split-pages 1 --process-outline 0 "${pdfPath}" "${outputPath}"`;
 
   try {
     exec(pdf2htmlEXCommand, async (error, stdout, stderr) => {
