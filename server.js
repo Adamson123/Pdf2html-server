@@ -24,7 +24,7 @@ app.post("/convert", upload.single("pdf"), async (req, res) => {
   const outputPath = `${pdfPath}.html`;
 
   // Updated pdf2htmlEX command
-  const pdf2htmlEXCommand = `pdf2htmlEX --bg-format none --embed-css 1 --embed-font 1 --css-fallback 1 --fit-width 1024 --zoom 1.3 "${pdfPath}" "${outputPath}"`;
+  const pdf2htmlEXCommand = `pdf2htmlEX --bg-format none --embed-css 1 --embed-font 1 --fit-width 1024 --zoom 1.3 "${pdfPath}" "${outputPath}"`;
 
   try {
     exec(pdf2htmlEXCommand, async (error, stdout, stderr) => {
