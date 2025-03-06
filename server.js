@@ -23,8 +23,8 @@ app.post("/convert", upload.single("pdf"), async (req, res) => {
   const pdfPath = req.file.path;
   const outputPath = `${pdfPath}.html`;
 
-  // Updated pdf2htmlEX command
-  const pdf2htmlEXCommand = `pdf2htmlEX --bg-format none --embed-css 1 --embed-font 1 --fit-width 1024 --zoom 1.3 "${pdfPath}" "${outputPath}"`;
+  // 📌 Updated pdf2htmlEX command for smaller size but keeping structure, colors & images
+  const pdf2htmlEXCommand = `pdf2htmlEX --zoom 1 --embed-css 1 --embed-font 1 --embed-image 0 --bg-format jpg --bg-opacity 0.9 "${pdfPath}" "${outputPath}"`;
 
   try {
     exec(pdf2htmlEXCommand, async (error, stdout, stderr) => {
@@ -51,9 +51,9 @@ app.post("/convert", upload.single("pdf"), async (req, res) => {
 });
 
 app.post("/", (req, res) => {
-  res.status(200).json({ message: "post is working" });
+  res.status(200).json({ message: "POST is working" });
 });
 
-app.get("/", (req, res) => res.send("pdf2htmlEX Server is running!"));
+app.get("/", (req, res) => res.send("🚀 pdf2htmlEX Server is running!"));
 
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
