@@ -22,7 +22,7 @@ app.post("/convert", upload.single("pdf"), async (req, res) => {
 
   const pdfPath = req.file.path;
   const outputPath = `${pdfPath}.html`;
-  const pdf2htmlEXCommand = `pdf2htmlEX --process-outline 0 --process-annotation 0 ${pdfPath} ${outputPath}`; // Optimized command
+  const pdf2htmlEXCommand = `pdf2htmlEX --bg-format none --embed-css 0 --embed-font 0 --embed-image 0 --fit-width 1024 --zoom 1.3 ${pdfPath} ${outputPath}`; // Optimized command
 
   try {
     exec(pdf2htmlEXCommand, async (error, stdout, stderr) => {
