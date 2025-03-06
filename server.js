@@ -12,6 +12,8 @@ app.use(cors({
   origin: '*', 
   methods: '*',
   allowedHeaders: '*',
+exposedHeaders: '*', // Allow all response headers
+
 }));
 
 // Configure file upload storage
