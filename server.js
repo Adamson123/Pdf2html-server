@@ -41,6 +41,11 @@ app.post("/convert", upload.single("pdf"), (req, res) => {
   });
 });
 
+app.post("/",(req, res) => {
+  
+res.status(200).json({message:"post is working"})
+})
+
 // Health check
 app.get("/", (req, res) => res.send("pdf2htmlEX Server is running!"));
 
