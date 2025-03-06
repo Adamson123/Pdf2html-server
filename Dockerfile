@@ -1,42 +1,35 @@
-# Use Debian as the base image
-FROM debian:latest
+# Use Ubuntu 20.04 as the base image
+FROM ubuntu:20.04
 
-# Install dependencies
+# Set non-interactive mode to avoid prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update package list and install dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential cmake g++ pkg-config \
-    libpoppler-glib-dev poppler-utils \
-    fontforge libglib2.0-dev \
-    libcairo2-dev libjpeg-dev libpng-dev \
-    git wget curl software-properties-common \
-    nodejs npm \
-    openjdk-11-jre-headless \
-    && rm -rf /var/lib/apt/lists/*  # Clean up APT cache
+    libfontconfig1 libcairo2 libjpeg-turbo8 wget curl \
+    build-essential git npm nodejs \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Clone the pdf2htmlEX repository
-RUN git clone --recursive https://github.com/pdf2htmlEX/pdf2htmlEX.git /pdf2htmlEX
+# Fix any broken dependencies
+RUN apt-get --fix-broken install -y
 
-# Navigate to the pdf2htmlEX directory
-WORKDIR /pdf2htmlEX
+# Download latest pdf2htmlEX Debian package
+RUN wget https://github.com/pdf2htmlEX/pdf2htmlEX/releases/download/v0.18.8.rc1/pdf2htmlEX-0.18.8.rc1-master-20200630-Ubuntu-bionic-x86_64.deb -O pdf2htmlEX.deb
 
-# Install additional dependencies required for pdf2htmlEX
-RUN apt-get update && apt-get install -y \
-    libfreetype6-dev libfontconfig1-dev \
-    libicu-dev libpng-dev libjpeg-dev \
-    && rm -rf /var/lib/apt/lists/*  # Clean up APT cache
+# Install pdf2htmlEX
+RUN apt-get install -y ./pdf2htmlEX.deb || (dpkg -i pdf2htmlEX.deb && apt-get install -f -y)
 
-# Fix missing OpenJDK 8 by forcing an alternative
-RUN sed -i 's/openjdk-8-jre-headless/openjdk-11-jre-headless/g' ./buildScripts/getBuildToolsApt
+# Verify pdf2htmlEX installation
+RUN pdf2htmlEX -v
 
-# Build pdf2htmlEX
-RUN ./buildScripts/getBuildToolsApt \
-    && ./buildScripts/buildInstallLocallyApt
-
-# Install npm dependencies (if needed)
+# Set working directory
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm install
 
-# Copy the rest of the application
+# Install npm dependencies (if a package.json exists)
+COPY package.json package-lock.json* ./
+RUN if [ -f package.json ]; then npm install; fi
+
+# Copy app files
 COPY . .
 
 # Set pdf2htmlEX as the default command
