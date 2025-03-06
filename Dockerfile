@@ -1,10 +1,10 @@
-# Use Ubuntu 20.04 as the base image
+# Use Ubuntu as the base image
 FROM ubuntu:20.04
 
-# Set environment variables to prevent interactive prompts
+# Set environment variable to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update and install dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libfontconfig1 \
     libcairo2 \
@@ -20,20 +20,21 @@ RUN wget https://github.com/pdf2htmlEX/pdf2htmlEX/releases/download/v0.18.8.rc1/
     && mv pdf2htmlEX-0.18.8.rc1-master-20200630-Ubuntu-bionic-x86_64.deb pdf2htmlEX.deb \
     && dpkg -i pdf2htmlEX.deb || apt-get install -f -y  
 
-# Set working directory inside the container
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy only package.json (ignore package-lock.json)
+# Copy package.json and install dependencies (without package-lock.json)
 COPY package.json ./
-
-# Install dependencies without package-lock.json
 RUN npm install --no-package-lock  
 
-# Copy the rest of the app files
+# Copy all other files into the container
 COPY . .  
 
-# Expose the port
+# Ensure node_modules is not ignored
+RUN ls -la node_modules || echo "node_modules is missing!"
+
+# Expose the application port
 EXPOSE 3000  
 
-# Start the Node.js server
+# Run the server
 CMD ["node", "server.js"]
