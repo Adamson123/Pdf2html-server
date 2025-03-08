@@ -9,12 +9,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(
-  cors({
-    origin: "",
-    methods: "",
-    allowedHeaders: "",
-    exposedHeaders: "",
-  })
+  cors()
 );
 
 const upload = multer({ dest: "uploads/" });
