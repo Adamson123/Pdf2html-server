@@ -1,93 +1,76 @@
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
-const { spawn } = require("child_process"); // Use spawn for streaming
+const { spawn } = require("child_process");
 const fs = require("fs").promises;
 const path = require("path");
+const pdfLib = require("pdf-lib"); // To check total pages
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(
-  cors()
-);
+app.use(cors({ origin: "", methods: "", allowedHeaders: "", exposedHeaders: "" }));
 
 const upload = multer({ dest: "uploads/" });
+
+async function getTotalPages(pdfPath) {
+  const pdfBytes = await fs.readFile(pdfPath);
+  const pdfDoc = await pdfLib.PDFDocument.load(pdfBytes);
+  return pdfDoc.getPageCount();
+}
 
 app.post("/convert", upload.single("pdf"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
   const pdfPath = req.file.path;
-  const outputHtmlPath = `${pdfPath}.html`;
+  const totalPages = await getTotalPages(pdfPath);
+  if (totalPages === 0) return res.status(400).json({ error: "PDF has no pages" });
 
-  try {
-    const pdf2htmlEXCommand = "pdf2htmlEX";
-    const pdf2htmlEXArgs = [
-      "--zoom",
-      "1",
-      "--embed-css",
-      "1",
-      "--embed-font",
-      "1",
-      "--embed-image",
-      "1",
-      "--bg-format",
-      "svg",
-      "--process-outline",
-      "0",
-      "--optimize-text",
-      "1",
+  let page = 1;
+  const batchSize = Math.min(10, totalPages); // Max 10 pages per batch
+  res.setHeader("Content-Type", "text/html");
+
+  const processBatch = () => {
+    if (page > totalPages) {
+      fs.unlink(pdfPath); // Cleanup uploaded file
+      return res.end(); // Done
+    }
+
+    const lastPage = Math.min(page + batchSize - 1, totalPages);
+    const outputFile = `${pdfPath}-${page}-${lastPage}.html`;
+
+    const pdf2htmlEX = spawn("wsl", [
+      "pdf2htmlEX",
+      `--first-page=${page}`,
+      `--last-page=${lastPage}`,
+      "--zoom", "1",
+      "--embed-css", "1",
+      "--embed-font", "1",
+      "--embed-image", "1",
+      "--bg-format", "svg",
+      "--process-outline", "0",
+      "--optimize-text", "1",
       pdfPath,
-      outputHtmlPath,
-    ];
+      outputFile
+    ]);
 
-    const pdf2htmlEXProcess = spawn(pdf2htmlEXCommand, pdf2htmlEXArgs);
-
-    // Stream stdout to the client
-    res.setHeader("Content-Type", "text/html"); // Set appropriate content type
-    pdf2htmlEXProcess.stdout.pipe(res);
-
-    // Handle errors
-    pdf2htmlEXProcess.stderr.on("data", (data) => {
-      console.error("pdf2htmlEX Error:", data.toString());
-      // Optionally, you might want to send an error to the client here.
-    });
-
-    // Handle process exit
-    pdf2htmlEXProcess.on("close", async (code) => {
-      if (code !== 0) {
-        console.error(`pdf2htmlEX process exited with code ${code}`);
-        //If no error has already been sent, send a general error.
-        if(!res.headersSent){
-            res.status(500).send("pdf2htmlEX conversion failed");
-        }
-        try {
-            await fs.unlink(pdfPath);
-            await fs.unlink(outputHtmlPath);
-        } catch(unlinkError){
-            console.error("error unlinking files", unlinkError);
-        }
-        return;
+    pdf2htmlEX.on("close", async () => {
+      try {
+        const htmlData = await fs.readFile(outputFile, "utf8");
+        res.write(htmlData);
+        await fs.unlink(outputFile); // Cleanup batch file
+        page += batchSize;
+        processBatch(); // Process next batch
+      } catch (err) {
+        console.error("File processing error:", err);
+        page += batchSize;
+        processBatch(); // Skip if file not found
       }
-
-      console.log(`pdf2htmlEX process exited with code ${code}`);
-      try{
-        await fs.unlink(pdfPath);
-        await fs.unlink(outputHtmlPath);
-      } catch(unlinkError){
-        console.error("error unlinking files", unlinkError);
-      }
-
     });
+  };
 
-  } catch (e) {
-    console.error("Execution error:", e);
-    return res.status(500).json({ error: "Server error" });
-  }
+  processBatch();
 });
 
-app.get("/", (req, res) =>
-  res.send("🚀 pdf2htmlEX Optimized Server is running!")
-);
-
+app.get("/", (req, res) => res.send("🚀 pdf2htmlEX Streaming Server is running!"));
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
