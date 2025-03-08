@@ -1,8 +1,8 @@
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
-const { exec } = require("child_process");
-const fs = require("fs").promises;
+const { spawn } = require("child_process");
+const fs = require("fs");
 const path = require("path");
 
 const app = express();
@@ -23,36 +23,48 @@ app.post("/convert", upload.single("pdf"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
   const pdfPath = req.file.path;
-  const outputHtmlPath = `${pdfPath}.html`;
 
   try {
-    const pdf2htmlEXCommand = `pdf2htmlEX --zoom 1 --embed-css 1 --embed-font 1 --embed-image 1 --bg-format svg --process-outline 0 --optimize-text 1 "${pdfPath}" "${outputHtmlPath}"`;
+    // Spawn pdf2htmlEX process
+    const pdf2htmlProcess = spawn("pdf2htmlEX", [
+      "--zoom",
+      "1",
+      "--embed-css",
+      "1",
+      "--embed-font",
+      "1",
+      "--embed-image",
+      "1",
+      "--bg-format",
+      "svg",
+      "--process-outline",
+      "0",
+      "--optimize-text",
+      "1",
+      pdfPath,
+      "-" // Use "-" to output to stdout instead of writing a file
+    ]);
 
-    exec(pdf2htmlEXCommand, async (error, stdout, stderr) => {
-      if (error) {
-        console.error("pdf2htmlEX Error:", stderr);
-        return res.status(500).json({ error: stderr });
-      }
+    res.setHeader("Content-Type", "text/html");
 
-      try {
-        const htmlData = await fs.readFile(outputHtmlPath, "utf8");
+    // Pipe pdf2htmlEX output directly to response (streaming)
+    pdf2htmlProcess.stdout.pipe(res);
 
-        // Delete both the uploaded PDF and generated HTML to keep storage clean
-        await fs.unlink(pdfPath);
-        await fs.unlink(outputHtmlPath);
-
-        res.send(htmlData);
-      } catch (readError) {
-        console.error("File processing error:", readError);
-        return res.status(500).json({ error: "Error processing files" });
-      }
+    pdf2htmlProcess.stderr.on("data", (err) => {
+      console.error("pdf2htmlEX Error:", err.toString());
     });
+
+    pdf2htmlProcess.on("close", async () => {
+      // Cleanup: Delete uploaded PDF
+      await fs.promises.unlink(pdfPath).catch(() => {});
+    });
+
   } catch (e) {
     console.error("Execution error:", e);
     return res.status(500).json({ error: "Server error" });
   }
 });
 
-app.get("/", (req, res) => res.send("🚀 pdf2htmlEX Optimized Server is running!"));
+app.get("/", (req, res) => res.send("🚀 pdf2htmlEX Streaming Server is running!"));
 
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
